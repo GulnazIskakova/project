@@ -90,12 +90,15 @@ struct thread
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
 
-    // added, member ticks_2_sleep  - to detect how manyticks to sleep
-    int64_t ticks_2_sleep;
+    // added for alarm part
+    int64_t awake_time; // when to wake up
+    struct semaphore sema_s; // enables thread to be put to sleep and to be woken
+    struct list_elem s_elem; // specifies element of s_thread_list
+    struct list_elem timer_elem; 	
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-
+    	
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */

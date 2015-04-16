@@ -20,6 +20,7 @@
 
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
+static struct list s_thread_list; //list that stores all sleeping threads
 
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
@@ -38,6 +39,7 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  list_init(&s_thread_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -86,21 +88,13 @@ timer_elapsed (int64_t then)
 }
 
 
-// added, wake_threads
-// function for waking up a sleeping thread. 
-static void wake_threads(struct thread *t, void *aux)
+/* added function: compare_wakeup_time.
+ *  Compares wakeup time of threads*/
+bool compare_wakeup_time (const struct list_elem *first, const struct list_elem *second, void *aux)
 {
-  if(t->status == THREAD_BLOCKED)
-  {
-    if(t->ticks_2_sleep > 0)
-    {
-      t->ticks_2_sleep--;
-      if(t->ticks_2_sleep == 0)
-      {
-        thread_unblock(t);
-      }
-    }
-  }
+  const struct thread *a = list_entry (first, struct thread, timer_elem);
+  const struct thread *b = list_entry (second, struct thread, timer_elem);
+  return a->awake_time <= b->awake_time;
 }
 
 
@@ -110,36 +104,23 @@ static void wake_threads(struct thread *t, void *aux)
 void
 timer_sleep (int64_t ticks) 
 {
-  // added, getting current thread
-  struct thread *t = thread_current();
- 
-  // added, calculate when to wake up
-  &t->alarm_time = sysTick() + ticks;
-  
-  
-  
-  /*
-  int64_t start = timer_ticks ();
-
   ASSERT (intr_get_level () == INTR_ON);
-<<<<<<< HEAD
+  
+  intr_disable();
+  
+  // get current thread
+  struct thread *curr_thr = thread_current();
 
-  // assign requested sleep time to current thread
-  thread_current()->ticks_2_sleep = ticks;
-   
-  // disable interrupts to allow thread-blocking
-  enum intr_level old_level = intr_disable();
+  // calculate awake time
+  curr_thr->awake_time = timer_ticks() + ticks;
+  
+  // insert to sleeping list 
+  list_insert_ordered(&s_thread_list, &curr_thr->s_elem, compare_wakeup_time, NULL);
+  
+  sema_down(&curr_thr->sema_s);
 
-  // block current thread
-  thread_block();
+  intr_enable();	
 
-  // set old interrupt level 
-  intr_set_level(old_level);
-=======
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
-    */
->>>>>>> 7eabe5614dabd776fbb5acb484a3a6c4d3f0828d
 }
 
 
@@ -218,11 +199,23 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+  struct list_elem *e;
+  struct thread *thr;
+
+  e = list_begin(&s_thread_list);
+  thr = list_entry(e, struct thread, timer_elem);
+  while( (timer_ticks() >= thr->awake_time) && (e != list_end(&s_thread_list) ))
+  {
+    sema_up(&thr->sema_s);
+    e = list_remove(e);
+    thr = list_entry(e, struct thread, timer_elem);
+  }
+
   ticks++;
   thread_tick ();
 
-  // checks each thread with wake_threads() after each tick.
-  thread_foreach(wake_threads, 0);
+ 
+
 }
 
 
