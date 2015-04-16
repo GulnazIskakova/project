@@ -110,9 +110,19 @@ static void wake_threads(struct thread *t, void *aux)
 void
 timer_sleep (int64_t ticks) 
 {
+  // added, getting current thread
+  struct thread *t = thread_current();
+ 
+  // added, calculate when to wake up
+  &t->alarm_time = sysTick() + ticks;
+  
+  
+  
+  /*
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
+<<<<<<< HEAD
 
   // assign requested sleep time to current thread
   thread_current()->ticks_2_sleep = ticks;
@@ -125,7 +135,14 @@ timer_sleep (int64_t ticks)
 
   // set old interrupt level 
   intr_set_level(old_level);
+=======
+  while (timer_elapsed (start) < ticks) 
+    thread_yield ();
+    */
+>>>>>>> 7eabe5614dabd776fbb5acb484a3a6c4d3f0828d
 }
+
+
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
    turned on. */
