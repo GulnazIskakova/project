@@ -7,7 +7,7 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
-#include "list.h"
+//#include "list.h"
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -124,7 +124,6 @@ timer_sleep (int64_t ticks)
 }
 
 
-
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
    turned on. */
 void
@@ -199,11 +198,9 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
-  struct list_elem *e;
-  struct thread *thr;
+  struct list_elem *e = list_begin(&s_thread_list);
+  struct thread *thr = list_entry(e, struct thread, timer_elem);
 
-  e = list_begin(&s_thread_list);
-  thr = list_entry(e, struct thread, timer_elem);
   while( (timer_ticks() >= thr->awake_time) && (e != list_end(&s_thread_list) ))
   {
     sema_up(&thr->sema_s);
@@ -213,9 +210,6 @@ timer_interrupt (struct intr_frame *args UNUSED)
 
   ticks++;
   thread_tick ();
-
- 
-
 }
 
 
