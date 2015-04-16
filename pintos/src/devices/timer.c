@@ -85,6 +85,26 @@ timer_elapsed (int64_t then)
   return timer_ticks () - then;
 }
 
+
+// added, wake_threads
+// function for waking up a sleeping thread. 
+static void wake_threads(struct thread *t, void *aux)
+{
+  if(t->status == THREAD_BLOCKED)
+  {
+    if(t->ticks_2_sleep > 0)
+    {
+      t->ticks_2_sleep--;
+      if(t->ticks_2_sleep == 0)
+      {
+        thread_unblock(t);
+      }
+    }
+  }
+}
+
+
+
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must
    be turned on. */
 void
@@ -93,8 +113,18 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+
+  // assign requested sleep time to current thread
+  thread_current()->ticks_2_sleep = ticks;
+   
+  // disable interrupts to allow thread-blocking
+  enum intr_level old_level = intr_disable();
+
+  // block current thread
+  thread_block();
+
+  // set old interrupt level 
+  intr_set_level(old_level);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -173,7 +203,12 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+
+  // checks each thread with wake_threads() after each tick.
+  thread_foreach(wake_threads, 0);
 }
+
+
 
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */
