@@ -88,18 +88,6 @@ timer_elapsed (int64_t then)
 }
 
 
-/* added function: compare_wakeup_time.
- *  Compares wakeup time of threads*/
-bool compare_wakeup_time (const struct list_elem *first, const struct list_elem *second, void *aux UNUSED)
-{
-  const struct thread *a = list_entry (first, struct thread, timer_elem);
-  const struct thread *b = list_entry (second, struct thread, timer_elem);
-  if (b->awake_time > a->awake_time)
-	return true;
- else 
-	return false;
-}
-
 
 
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must
@@ -108,9 +96,25 @@ void
 timer_sleep (int64_t ticks) 
 {
 	ASSERT (intr_get_level () == INTR_ON);
+
+ 	if (ticks <= 0) return;
+
+	enum intr_level old_level = intr_disable();
+	thread_current()->awake_time = timer_ticks() + ticks;
+	list_insert_ordered(&s_thread_list, &thread_current()->elem, 
+					(list_less_func *) &compare_wakeup_time, NULL);
+
+	thread_block();
+	intr_set_level(old_level);
+}
+
+
+
+
+
   	//here we should check for the threads because if the case is idle, we
   	//actually do not need the wait ticks
-	if (ticks > 0)
+/*	if (ticks > 0)
 	{
  		 enum intr_level old_level_disable = intr_disable();
   		// get current thread
@@ -126,8 +130,8 @@ timer_sleep (int64_t ticks)
 		thread_block();
   		intr_set_level(old_level_disable);
 	}
+*/
 
-}
 
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -228,17 +232,19 @@ timer_interrupt (struct intr_frame *args UNUSED)
 	struct list_elem *e = list_begin(&s_thread_list);
 	while(e != list_end(&s_thread_list))
   	{
-		struct thread *thr = list_entry(e, struct thread, timer_elem);
+		struct thread *thr = list_entry(e, struct thread, elem);
 		//sema_up(&thr->sema_s);
-		if(ticks > thr->awake_time)
-		{
-			list_remove(e);
-			thread_unblock(thr);
-			e = list_begin(&s_thread_list);
- 		}
-		else 
-			break;
+		if(ticks < thr->awake_time) break;
+
+		
+		list_remove(e);
+		thread_unblock(thr);
+		e = list_begin(&s_thread_list);
+ 		
+		 
+		
 	}
+	//test_max_priority();
 	//now we should test the thread if it has max priority 
 
 }

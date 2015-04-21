@@ -95,7 +95,6 @@ struct thread
     int64_t awake_time; // when to wake up
     struct semaphore sema_s; // enables thread to be put to sleep and to be woken
     struct list_elem s_elem; // specifies element of s_thread_list
-    struct list_elem timer_elem; 	
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -137,6 +136,8 @@ void thread_yield (void);
 typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
 
+
+
 int thread_get_priority (void);
 void thread_set_priority (int);
 
@@ -144,5 +145,16 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+// added functions
+bool compare_wakeup_time (const struct list_elem *first,
+			  const struct list_elem *second,
+			  void *aux UNUSED);
+
+bool compare_priority (const struct list_elem *first,
+		       const struct list_elem *second,
+		       void *aux UNUSED);
+
+void test_max_priority (void);
 
 #endif /* threads/thread.h */
