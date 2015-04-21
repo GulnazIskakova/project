@@ -10,7 +10,7 @@
 //#include "list.h"
   
 /* See [8254] for hardware details of the 8254 timer chip. */
-
+#define RECALC_FREQ 4
 #if TIMER_FREQ < 19
 #error 8254 timer requires TIMER_FREQ >= 19
 #endif
@@ -90,11 +90,14 @@ timer_elapsed (int64_t then)
 
 /* added function: compare_wakeup_time.
  *  Compares wakeup time of threads*/
-bool compare_wakeup_time (const struct list_elem *first, const struct list_elem *second, void *aux)
+bool compare_wakeup_time (const struct list_elem *first, const struct list_elem *second, void *aux UNUSED)
 {
   const struct thread *a = list_entry (first, struct thread, timer_elem);
   const struct thread *b = list_entry (second, struct thread, timer_elem);
-  return a->awake_time <= b->awake_time;
+  if (b->awake_time > a->awake_time)
+	return true;
+ else 
+	return false;
 }
 
 
@@ -104,22 +107,25 @@ bool compare_wakeup_time (const struct list_elem *first, const struct list_elem 
 void
 timer_sleep (int64_t ticks) 
 {
-  ASSERT (intr_get_level () == INTR_ON);
-  
-  intr_disable();
-  
-  // get current thread
-  struct thread *curr_thr = thread_current();
-
-  // calculate awake time
-  curr_thr->awake_time = timer_ticks() + ticks;
-  
-  // insert to sleeping list 
-  list_insert_ordered(&s_thread_list, &curr_thr->s_elem, compare_wakeup_time, NULL);
-  
-  sema_down(&curr_thr->sema_s);
-
-  intr_enable();	
+	ASSERT (intr_get_level () == INTR_ON);
+  	//here we should check for the threads because if the case is idle, we
+  	//actually do not need the wait ticks
+	if (ticks > 0)
+	{
+ 		 enum intr_level old_level_disable = intr_disable();
+  		// get current thread
+ 		 struct thread *curr_thr = thread_current();
+  		// calculate awake time
+  		curr_thr->awake_time = timer_ticks() + ticks;
+  		// insert to sleeping list 
+  		//--- here we should check for the function passing variables because I think that it is not doing smth we 
+  		// want 
+ 		 list_insert_ordered(&s_thread_list, &curr_thr->s_elem, (list_less_func *) &compare_wakeup_time, NULL);
+  		//---what is sema_down is exactly doing
+ 		 //sema_down(&curr_thr->sema_s);
+		thread_block();
+  		intr_set_level(old_level_disable);
+	}
 
 }
 
@@ -195,7 +201,8 @@ timer_print_stats (void)
 }
 
 /* Timer interrupt handler. */
-static void
+//----this is our old timer interrupt
+/*static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   struct list_elem *e = list_begin(&s_thread_list);
@@ -210,7 +217,33 @@ timer_interrupt (struct intr_frame *args UNUSED)
 
   ticks++;
   thread_tick ();
+}*/
+//here is the new implementation of the interrupt handler 
+static void
+timer_interrupt (struct intr_frame *args UNUSED)
+{
+	ticks++;
+	thread_tick();
+	//here we are getting particular element 
+	struct list_elem *e = list_begin(&s_thread_list);
+	while(e != list_end(&s_thread_list))
+  	{
+		struct thread *thr = list_entry(e, struct thread, timer_elem);
+		//sema_up(&thr->sema_s);
+		if(ticks > thr->awake_time)
+		{
+			list_remove(e);
+			thread_unblock(thr);
+			e = list_begin(&s_thread_list);
+ 		}
+		else 
+			break;
+	}
+	//now we should test the thread if it has max priority 
+
 }
+
+
 
 
 

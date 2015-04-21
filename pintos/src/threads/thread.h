@@ -1,7 +1,7 @@
 #ifndef THREADS_THREAD_H
 #define THREADS_THREAD_H
 #include <threads/synch.h>
-
+#include <stdbool.h>
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
