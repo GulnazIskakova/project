@@ -25,4 +25,9 @@ void timer_udelay (int64_t microseconds);
 void timer_ndelay (int64_t nanoseconds);
 void timer_print_stats (void);
 
+// added 
+//bool compare_wakeup_time (const struct list_elem *first,
+ //                         const struct list_elem *second,
+  //                        void *aux UNUSED);
+
 #endif /* devices/timer.h */

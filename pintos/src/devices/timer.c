@@ -87,7 +87,14 @@ timer_elapsed (int64_t then)
   return timer_ticks () - then;
 }
 
-
+bool compare_wakeup_time (const struct list_elem *first,
+                          const struct list_elem *second,
+                          void *aux UNUSED)
+{
+    struct thread *tempFirst = list_entry(first, struct thread, elem);
+    struct thread *tempSecond = list_entry(second, struct thread, elem);
+    return tempFirst->awake_time < tempSecond->awake_time;
+}
 
 
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must
@@ -204,7 +211,7 @@ timer_print_stats (void)
 {
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
-
+
 /* Timer interrupt handler. */
 //----this is our old timer interrupt
 /*static void
@@ -223,6 +230,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
   thread_tick ();
 }*/
+
 //here is the new implementation of the interrupt handler 
 static void
 timer_interrupt (struct intr_frame *args UNUSED)

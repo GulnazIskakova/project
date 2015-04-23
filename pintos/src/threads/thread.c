@@ -343,16 +343,30 @@ thread_foreach (thread_action_func *func, void *aux)
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
-thread_set_priority (int new_priority) 
+thread_set_priority (int new_prio) 
 {
-  thread_current ()->priority = new_priority;
+    enum intr_level old_level = intr_disable();
+    int prev_prio = thread_current()->priority;
+    thread_current()->init_prio = new_prio;
+    new_priority();
+
+    // donating if new prio is higher
+    if (prev_prio < thread_current()->priority)
+        donate_priority();
+    else check_priority();
+
+    // enabling interrupts
+    intr_set_level (old_level);
 }
 
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
 {
-  return thread_current ()->priority;
+    enum intr_level old_level = intr_disable();
+    int temp_prio = thread_current()->priority;
+    intr_set_level (old_level);
+    return temp_prio;
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -472,6 +486,13 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
+
+  // added for priority part
+  t->lock_w = NULL;
+  t->init_prio = priority;
+  list_init(&t->donation_list);
+
+
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -606,7 +627,38 @@ bool compare_priority (const struct list_elem *first,
 	
 }
 
-
+void check_priority (void)
+{
+    if (list_empty(&ready_list) )
+        return;
+
+    struct thread *thr = list_entry(list_front(&ready_list),
+                                struct thread, elem);
+
+    if (intr_context())
+    {
+        ++thread_ticks;
+        if (thread_current()->priority < thr->priority ||
+            (thread_ticks >= TIME_SLICE &&
+            thread_current()->priority == thr->priority))
+            intr_yield_on_return();
+
+       return;
+    }
+
+   if (thread_current()->priority < thr->priority)
+      thread_yield();
+} 
+
+void new_priority(void)
+{
+    struct thread *thr = thread_current();
+    thr->priority = thr->init_prio;
+    if (!list_empty(&thr->donation_list))
+    {
+        struct thread *
+
+
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);

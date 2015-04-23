@@ -165,7 +165,7 @@ bool compare_priority (const struct list_elem *first,
 		       
 void lock_delete (struct lock *lock);
 void new_priority (void);
-void test_max_priority (void);
+void check_priority (void);
 void donate_priority (void);
 
 
