@@ -314,9 +314,10 @@ thread_exit (void)
 void
 thread_yield (void) 
 {
-  struct thread *cur = thread_current ();
+  struct thread *cur;
   enum intr_level old_level;
   
+  cur= thread_current ();
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
@@ -332,7 +333,7 @@ thread_yield (void)
 void
 thread_foreach (thread_action_func *func, void *aux)
 {
-  struct list_elem *e;
+	struct list_elem *e;
 
   ASSERT (intr_get_level () == INTR_OFF);
 
@@ -348,30 +349,32 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_prio) 
 {
-    enum intr_level old_level = intr_disable();
-    int prev_prio = thread_current()->priority;
-    thread_current()->init_prio = new_prio;
-    new_priority();
+	//declaring the neccessary elements for disabling the timer
+	//and getting new priority of the thread
+	enum intr_level old_level;
+	int prev_prio;
+    	old_level= intr_disable();
+	prev_prio = thread_current()->priority;
+	thread_current()->init_prio = new_prio;
+	new_priority();
 
-    // donating if new prio is higher
-    (prev_prio < thread_current()->priority) ? donate_priority() : check_priority();
-
-   // if (prev_prio < thread_current()->priority)
-   //     donate_priority();
-   // else check_priority();
-
-    // enabling interrupts
-    intr_set_level (old_level);
+	// donating if new prio is higher
+    	(prev_prio < thread_current()->priority) ? donate_priority() : check_priority();
+   	 // enabling interrupts
+    	intr_set_level (old_level);
 }
 
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
 {
-    enum intr_level old_level = intr_disable();
-    int temp_prio = thread_current()->priority;
-    intr_set_level (old_level);
-    return temp_prio;
+	//we should disable the interrupts
+    	enum intr_level old_level;
+    	int temp_prio; //holds the current thread's priority
+    	old_level = intr_disable();
+    	temp_prio = thread_current()->priority;
+   	intr_set_level (old_level); // enable back the interrupts
+    	return temp_prio; //return the priority
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -615,83 +618,91 @@ allocate_tid (void)
   return tid;
 }
 
+bool compare_priority (const struct list_elem *first,
+		       const struct list_elem *second,
+		       void *aux UNUSED)
+{
 
+	struct thread *tempfirst;
+	struct thread *tempsecond;
+	tempfirst = list_entry(first, struct thread, elem);
+	tempsecond = list_entry(second, struct thread, elem);
+	return tempfirst->priority > tempsecond->priority;
+	
+}
 // added functions
 bool compare_wakeup_time (const struct list_elem *first,
 			  const struct list_elem *second,
 			  void *aux UNUSED)
 {
-	struct thread *tempfirst = list_entry(first, struct thread, elem);
-	struct thread *tempsecond = list_entry(second, struct thread, elem);
+	
+	struct thread *tempfirst;
+	struct thread *tempsecond;
+	tempfirst = list_entry(first, struct thread, elem);
+	tempsecond = list_entry(second, struct thread, elem);
 	return tempfirst->awake_time < tempsecond->awake_time;
 	
 }
 
-bool compare_priority (const struct list_elem *first,
-		       const struct list_elem *second,
-		       void *aux UNUSED)
-{
-	struct thread *tempfirst = list_entry(first, struct thread, elem);
-	struct thread *tempsecond = list_entry(second, struct thread, elem);
-	return tempfirst->priority > tempsecond->priority;
-	
-}
 
 void check_priority (void)
 {
-    if (list_empty(&ready_list) )
-        return;
+	struct thread *thr;
+	if (list_empty(&ready_list) )
+        	return;
 
-    struct thread *thr = list_entry(list_front(&ready_list),
+	thr = list_entry(list_front(&ready_list),
                                 struct thread, elem);
 
-    if (intr_context())
-    {
-        ++thread_ticks;
-        if (thread_current()->priority < thr->priority ||
-            (thread_ticks >= TIME_SLICE &&
-            thread_current()->priority == thr->priority))
-            intr_yield_on_return();
+    	if (intr_context())
+   	{
+       		 ++thread_ticks;
+        	if (thread_current()->priority < thr->priority ||
+            		(thread_ticks >= TIME_SLICE &&
+            		thread_current()->priority == thr->priority))
+            			intr_yield_on_return();
 
-       return;
+       		return;
     }
 
-   if (thr->priority > thread_current()->priority)
-      thread_yield();
+   	if (thread_current()->priority < thr->priority)
+     		 thread_yield();
 } 
 
 void new_priority(void)
 {
-    struct thread *thr = thread_current();
-    thr->priority = thr->init_prio;
-    if (!list_empty(&thr->donation_list))
-    {
-        struct thread *s = list_entry(list_front(&thr->donation_list),
+	struct thread *s;
+    	struct thread *thr = thread_current();
+    	thr->priority = thr->init_prio;
+    	if (!list_empty(&thr->donation_list))
+    	{
+        	s = list_entry(list_front(&thr->donation_list),
                                         struct thread, donation_elem);
 
-        if (s->priority > thr->priority)
-            thr->priority = s->priority;
-    }
-    else
-      return;
+        	if (thr->priority < s->priority)
+            		thr->priority = s->priority;
+    	}
+    	else
+     		 return;
 }
 
 void donate_priority(void)
 {
-    struct thread *thr = thread_current();
-    int d = 0;
-    struct lock *lock = thr->lock_w;
-    while (d < 8 && lock)
-    {
-        ++d;
+    	struct thread *thr = thread_current();
+    	int d = 0;
+   	struct lock *lock;
+	lock = thr->lock_w;
+    	while (d < 8 && lock)
+   	 {
+       		 ++d;
 
-        // if lock is free, return
-        if (!lock->holder || lock->holder->priority >= thr->priority)
-            return;
+        	// if lock is free, return
+        	if (!lock->holder || lock->holder->priority >= thr->priority)
+            		return;
 
-        lock->holder->priority = thr->priority;
-        thr = lock->holder;
-        lock = thr->lock_w;
+        	lock->holder->priority = thr->priority;
+       		thr = lock->holder;
+        	lock = thr->lock_w;
     }
 }
 

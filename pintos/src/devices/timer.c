@@ -228,23 +228,21 @@ timer_interrupt (struct intr_frame *args UNUSED)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+	struct list_elem *e;
+	struct thread *thr;
 	ticks++;
 	thread_tick();
 	//here we are getting particular element 
-	struct list_elem *e = list_begin(&s_thread_list);
+	e = list_begin(&s_thread_list);
 	while(e != list_end(&s_thread_list))
   	{
-		struct thread *thr = list_entry(e, struct thread, elem);
+		thr = list_entry(e, struct thread, elem);
 		//sema_up(&thr->sema_s);
 		if(ticks < thr->awake_time) break;
-
 		
 		list_remove(e);
 		thread_unblock(thr);
 		e = list_begin(&s_thread_list);
- 		
-		 
-		
 	}
     check_priority();
 }
