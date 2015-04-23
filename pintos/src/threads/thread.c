@@ -354,9 +354,11 @@ thread_set_priority (int new_prio)
     new_priority();
 
     // donating if new prio is higher
-    if (prev_prio < thread_current()->priority)
-        donate_priority();
-    else check_priority();
+    (prev_prio < thread_current()->priority) ? donate_priority() : check_priority();
+
+   // if (prev_prio < thread_current()->priority)
+   //     donate_priority();
+   // else check_priority();
 
     // enabling interrupts
     intr_set_level (old_level);
@@ -654,7 +656,7 @@ void check_priority (void)
        return;
     }
 
-   if (thread_current()->priority < thr->priority)
+   if (thr->priority > thread_current()->priority)
       thread_yield();
 } 
 
