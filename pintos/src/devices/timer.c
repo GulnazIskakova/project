@@ -106,6 +106,7 @@ timer_sleep (int64_t ticks)
 		thread_block();
 		intr_set_level(old_level);
 	}
+
 }
 
 
@@ -245,9 +246,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
 		 
 		
 	}
-	//test_max_priority();
-	//now we should test the thread if it has max priority 
-
+    check_priority();
 }
 
 

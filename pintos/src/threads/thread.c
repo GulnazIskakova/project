@@ -209,6 +209,9 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
+  old_level = intr_disable();
+  check_priority();
+  intr_set_level (old_level);
 
   return tid;
 }
@@ -247,7 +250,7 @@ thread_unblock (struct thread *t)
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   list_insert_ordered (&ready_list, &t->elem,
-			(list_less_func *) *compare_priority, NULL);
+			(list_less_func *) &compare_priority, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -373,22 +376,27 @@ thread_get_priority (void)
 void
 thread_set_nice (int nice UNUSED) 
 {
-  /* Not yet implemented. */
+    enum intr_level old_level = intr_disable();
+    thread_current()->nice = nice;
+    check_priority();
+    intr_set_level(old_level);
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+    enum intr_level old_level = intr_disable();
+    int temp = thread_current()->nice;
+    intr_set_level(old_level);
+  return temp;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void) 
 {
-  /* Not yet implemented. */
+    
   return 0;
 }
 

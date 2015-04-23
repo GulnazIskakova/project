@@ -102,7 +102,7 @@ struct thread
     struct list donation_list; // a list of threads waiting on the lock current thread is holding
     struct list_elem donation_elem; // can be added to another thread's d_list
     
-    
+    int nice; 
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
