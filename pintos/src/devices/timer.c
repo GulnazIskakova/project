@@ -87,14 +87,6 @@ timer_elapsed (int64_t then)
   return timer_ticks () - then;
 }
 
-bool compare_wakeup_time (const struct list_elem *first,
-                          const struct list_elem *second,
-                          void *aux UNUSED)
-{
-    struct thread *tempFirst = list_entry(first, struct thread, elem);
-    struct thread *tempSecond = list_entry(second, struct thread, elem);
-    return tempFirst->awake_time < tempSecond->awake_time;
-}
 
 
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must

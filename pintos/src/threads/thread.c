@@ -656,7 +656,53 @@ void new_priority(void)
     thr->priority = thr->init_prio;
     if (!list_empty(&thr->donation_list))
     {
-        struct thread *
+        struct thread *s = list_entry(list_front(&thr->donation_list),
+                                        struct thread, donation_elem);
+
+        if (s->priority > thr->priority)
+            thr->priority = s->priority;
+    }
+    else
+      return;
+}
+
+void donate_priority(void)
+{
+    struct thread *thr = thread_current();
+    int d = 0;
+    struct lock *lock = thr->lock_w;
+    while (d < 8 && lock)
+    {
+        ++d;
+
+        // if lock is free, return
+        if (!lock->holder || lock->holder->priority >= thr->priority)
+            return;
+
+        lock->holder->priority = thr->priority;
+        thr = lock->holder;
+        lock = thr->lock_w;
+    }
+}
+
+
+void lock_delete(struct lock *lock)
+{
+    struct list_elem *e = list_begin(&thread_current()->donation_list);
+    struct list_elem *next_elem;
+    while (e != list_end(&thread_current()->donation_list))
+    {
+        struct thread *thr = list_entry(e, struct thread, donation_elem);
+        next_elem = list_next(e);
+        if (thr->lock_w == lock)
+            list_remove(e);
+
+        e = next_elem;
+    }
+}
+
+
+
 
 
 /* Offset of `stack' member within `struct thread'.
