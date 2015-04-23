@@ -592,9 +592,8 @@ bool compare_wakeup_time (const struct list_elem *first,
 {
 	struct thread *tempfirst = list_entry(first, struct thread, elem);
 	struct thread *tempsecond = list_entry(second, struct thread, elem);
-	if (tempfirst->awake_time < tempsecond->awake_time)
-		return true;
-	return false;
+	return tempfirst->awake_time < tempsecond->awake_time;
+	
 }
 
 bool compare_priority (const struct list_elem *first,
@@ -603,9 +602,8 @@ bool compare_priority (const struct list_elem *first,
 {
 	struct thread *tempfirst = list_entry(first, struct thread, elem);
 	struct thread *tempsecond = list_entry(second, struct thread, elem);
-	if (tempfirst->priority > tempsecond->priority)
-		return true;
-	return false;
+	return tempfirst->priority > tempsecond->priority;
+	
 }
 
 
