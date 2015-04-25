@@ -256,6 +256,11 @@ lock_try_acquire (struct lock *lock)
    An interrupt handler cannot acquire a lock, so it does not
    make sense to try to release a lock within an interrupt
    handler. */
+void release_helper(struct lock *lock)
+{
+	lock_delete(lock);	
+	new_priority();
+}
 void
 lock_release (struct lock *lock) 
 {
@@ -263,14 +268,10 @@ lock_release (struct lock *lock)
 	ASSERT (lock != NULL);
   	ASSERT (lock_held_by_current_thread (lock));
   	old_level = intr_disable();
-  
 	lock->holder = NULL;
   	if (!thread_mlfqs)
- 	{
-      		lock_delete(lock);
-      		new_priority();
- 	 }
- 	 sema_up (&lock->semaphore); 
+      		release_helper(lock);
+ 	sema_up (&lock->semaphore); 
   	intr_set_level (old_level);//enable interrupts back
 }
 
@@ -292,6 +293,12 @@ struct semaphore_elem
     struct semaphore semaphore;         /* This semaphore. */
   };
 
+void insert_helper(struct semaphore_elem *first,struct semaphore_elem *second)
+{
+
+    list_sort(&first->semaphore.waiters, (list_less_func *) &compare_priority, NULL);
+    list_sort(&second->semaphore.waiters, (list_less_func *) &compare_priority, NULL);
+}
 bool compare_sema_prio (const struct list_elem *first,
                         const struct list_elem *second,
                         void *aux UNUSED)
@@ -310,9 +317,9 @@ bool compare_sema_prio (const struct list_elem *first,
     if (list_empty(&tempfirst->semaphore.waiters) )
         return false;
 
-    list_sort(&tempfirst->semaphore.waiters, (list_less_func *) &compare_priority, NULL);
-    list_sort(&tempsecond->semaphore.waiters, (list_less_func *) &compare_priority, NULL);
-
+    //list_sort(&tempfirst->semaphore.waiters, (list_less_func *) &compare_priority, NULL);
+    //list_sort(&tempsecond->semaphore.waiters, (list_less_func *) &compare_priority, NULL);
+	insert_helper(tempfirst, tempsecond);
     thrfirst = list_entry(list_front(&tempfirst->semaphore.waiters), struct thread, elem);
     thrsecond = list_entry(list_front(&tempsecond->semaphore.waiters), struct thread, elem);
 
@@ -359,18 +366,19 @@ cond_init (struct condition *cond)
 void
 cond_wait (struct condition *cond, struct lock *lock) 
 {
-  struct semaphore_elem waiter;
+	struct semaphore_elem waiter;
 
-  ASSERT (cond != NULL);
-  ASSERT (lock != NULL);
-  ASSERT (!intr_context ());
-  ASSERT (lock_held_by_current_thread (lock));
+	ASSERT (cond != NULL);
+	ASSERT (lock != NULL);
+	ASSERT (!intr_context ());
+	ASSERT (lock_held_by_current_thread (lock));
   
-  sema_init (&waiter.semaphore, 0);
-  list_insert_ordered (&cond->waiters, &waiter.elem, (list_less_func *) &compare_sema_prio, NULL);
-  lock_release (lock);
-  sema_down (&waiter.semaphore);
-  lock_acquire (lock);
+	sema_init (&waiter.semaphore, 0);
+	//here we should input the elements
+	list_insert_ordered (&cond->waiters, &waiter.elem, (list_less_func *) &compare_sema_prio, NULL);
+  	lock_release (lock);
+  	sema_down (&waiter.semaphore);
+  	lock_acquire (lock);
 }
 
 /* If any threads are waiting on COND (protected by LOCK), then

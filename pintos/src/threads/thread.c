@@ -668,7 +668,15 @@ void check_priority (void)
    	if (thread_current()->priority < thr->priority)
      		 thread_yield();
 } 
-
+void new_priority_helper(struct thread *curr, struct thread *thr)
+{
+	curr = list_entry(list_front(&thr->donation_list),
+				struct thread, donation_elem);
+		
+        if (thr->priority < curr->priority)
+            		thr->priority = curr->priority;
+	
+}
 void new_priority(void)
 {
 	struct thread *s;
@@ -676,11 +684,12 @@ void new_priority(void)
     	thr->priority = thr->init_prio;
     	if (!list_empty(&thr->donation_list))
     	{
-        	s = list_entry(list_front(&thr->donation_list),
-                                        struct thread, donation_elem);
+        	//s = list_entry(list_front(&thr->donation_list),
+                  //                      struct thread, donation_elem);
 
-        	if (thr->priority < s->priority)
-            		thr->priority = s->priority;
+        //	if (thr->priority < s->priority)
+          //  		thr->priority = s->priority;
+          	new_priority_helper(s,thr);
     	}
     	else
      		 return;

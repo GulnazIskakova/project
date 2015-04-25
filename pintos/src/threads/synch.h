@@ -25,11 +25,14 @@ struct lock
   };
 
 void lock_init (struct lock *);
+void release_helper(struct lock *lock);
 void lock_acquire (struct lock *);
 bool lock_try_acquire (struct lock *);
 void lock_release (struct lock *);
 bool lock_held_by_current_thread (const struct lock *);
-
+//void insert_helper(struct semaphore_elem *first, struct semaphore_elem *second);
+//bool compare_sema_prio(const struct list_elem *first, 
+//			const struct list_elem *second,void *aux UNUSED);
 /* Condition variable. */
 struct condition 
   {
