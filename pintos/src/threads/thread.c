@@ -20,6 +20,7 @@
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
+#define MIN_FILE_DESCRIPTOR 2
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -500,10 +501,15 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
 
+  // proj 2 added: used for file system sys calls
+  list_init(&t->file_list);
+  t->fd = MIN_FILE_DESCRIPTOR;
+
+
   // added for priority part
-  t->lock_w = NULL;
-  t->init_prio = priority;
-  list_init(&t->donation_list);
+  //t->lock_w = NULL;
+  //t->init_prio = priority;
+  //list_init(&t->donation_list);
 
 
 }
