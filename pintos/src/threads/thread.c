@@ -510,7 +510,7 @@ init_thread (struct thread *t, const char *name, int priority)
   list_push_back (&all_list, &t->allelem);
 
   // proj 2 added: used for file system sys calls
-  list_init(&t->file_list);
+  list_init(&t->files);
   t->fd = MIN_FILE_DESCRIPTOR;
 
   list_init(&t->child_list);
@@ -769,4 +769,3 @@ void lock_delete(struct lock *lock)
 
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
-uint32_t thread_stack_ofs = offsetof (struct thread, stack);
