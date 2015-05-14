@@ -62,6 +62,15 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
 
+  if (success)
+  {
+      thread_current()->cp->load = LOAD_SUCCESS;
+  }
+  else {
+      thread_current()->cp->load = LOAD_FAIL;
+
+  }
+
   /* If load failed, quit. */
   palloc_free_page (file_name);
   if (!success) 
@@ -89,7 +98,19 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  return -1;
+    struct child_process *cp = getchild(child_tid);
+    if (!cp)
+        return ERROR;
+    if (cp->wait)
+        return ERROR;
+    while (!cp->exit)
+    {
+        barrier();
+    
+    int status = cp->status;
+    byechild(cp);
+    return status;
+
 }
 
 /* Free the current process's resources. */
@@ -101,8 +122,14 @@ process_exit (void)
 
 
   // added to close the files that have been opened by the process
-  process_close_file(CLOSE_ALL);
+  byefile(CLOSE_ALL);
   
+  byechildren();
+
+  if (thread_alive(cur->parent))
+      cur->cp->exit = true;
+
+
  // Destroy the current process's page directory and switch back
  //    to the kernel-only page directory.
   pd = cur->pagedir;

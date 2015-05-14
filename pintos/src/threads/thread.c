@@ -14,6 +14,8 @@
 #include "list.h"
 #ifdef USERPROG
 #include "userprog/process.h"
+#include "threads/malloc.h"
+#include "userprog/syscall.h"
 #endif
 
 /* Random value for struct thread's `magic' member.
@@ -21,6 +23,7 @@
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 #define MIN_FILE_DESCRIPTOR 2
+#define NO_PARENT -1
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -207,6 +210,11 @@ thread_create (const char *name, int priority,
   sf->ebp = 0;
 
   intr_set_level (old_level);
+
+  // add child process to list of children
+  t->parent = thread_tid();
+  struct child_process *cp = newchild(t->tid);
+  t->cp = cp;
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -505,6 +513,9 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->file_list);
   t->fd = MIN_FILE_DESCRIPTOR;
 
+  list_init(&t->child_list);
+  t->cp = NULL;
+  t->parent = NO_PARENT;
 
   // added for priority part
   //t->lock_w = NULL;
@@ -622,6 +633,21 @@ allocate_tid (void)
   lock_release (&tid_lock);
 
   return tid;
+}
+
+uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+bool thread_alive (int pid)
+{
+    struct list_elem *e;
+
+    for (e = list_begin (&all_list); e != list_end (&all_list); e = list_next(e))
+    {
+        struct thread *t = list_entry (e, struct thread, allelem);
+        if (t->tid == pid)
+            return true;
+    }
+    return false;
 }
 
 bool compare_priority (const struct list_elem *first,

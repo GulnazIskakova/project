@@ -116,8 +116,16 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
 
     // added for syscall part
-    struct list filest;
+    struct list files;
     int fd;
+
+    // needed for wait/exec syscalls
+    struct list child_list;
+    tid_t parent;
+
+    // points to child_process struct in parent's child list
+    struct child_process *cp;
+
   };
 
 /* If false (default), use round-robin scheduler.
@@ -157,6 +165,8 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+bool thread_alive (int pid);
 
 // added functions
 bool compare_wakeup_time (const struct list_elem *first,
