@@ -17,8 +17,8 @@
 #include "userprog/pagedir.h"
 #include "userprog/process.h"
 
-//#define ERROR -1
-#define MAX_ARGS 4
+#define MAX_ARGS 3
+#define USER_VADDR_BOTTOM ((void *) 0x08048000)
 
 // new vars/structs
 struct lock filesys_lock;
@@ -37,7 +37,8 @@ int newfile (struct file *file);
 void byefile (int fd);
 
 static void syscall_handler (struct intr_frame *);
-
+void get_arg (struct intr_frame *f, int *arg, int n);
+void check_valid_ptr (const void *vaddr);
 
 void
 syscall_init (void) 
@@ -52,11 +53,10 @@ syscall_handler (struct intr_frame *f UNUSED)
 //  printf ("system call!\n");
 //  thread_exit ();
 
-    int args[MAX_ARGS];
-    for (int i = 0; i < MAX_ARGS; ++i)
-        args[i] = *( (int*) f->esp + i);
+    int arg[MAX_ARGS];
+    check_valid_ptr((const void *) f->esp);
 
-    switch (arg[0])
+    switch (* (int *) f->esp)
     {
         case SYS_HALT:
         {
@@ -152,13 +152,10 @@ void halt (void)
 void exit (int status)
 {
     struct thread *cur = thread_current();
-    bool exists = thread_alive(cur->parent);
-    if (exists)
-    {
-        if (cur->cp->wait)
+      
+    if (thread_alive(cur->parent))
             cur->cp->status = status;
 
-    }
 
     printf ("%s: exit(%d)\n", cur()->name, status);
     thread_exit();
@@ -169,9 +166,9 @@ pid_t exec (const char *cmd_line)
     pid_t pid = process_execute(cmd_line);
 
     struct child_process *cp = getchild(pid);
-    if (!cp)
-        return ERROR;
     
+    ASSERT(cp);
+
     while (cp->load == NOT_LOADED)
     {
         // block thread
