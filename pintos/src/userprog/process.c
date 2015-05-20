@@ -111,8 +111,8 @@ process_wait (tid_t child_tid UNUSED)
         return ERROR;
     if (cp->wait)
         return ERROR;
+   cp->wait = true;
     while (!cp->exit)
-    {
         barrier();
     
     int status = cp->status;
@@ -346,7 +346,7 @@ load (const char *file_name, void (**eip) (void), void **esp, char **save_ptr)
     }
 
   /* Set up stack. */
-  if (!setup_stack (esp, file_name, save_ptr)
+  if (!setup_stack (esp, file_name, save_ptr))
     goto done;
 
   /* Start address. */
@@ -507,9 +507,37 @@ setup_stack (void **esp, const char* file_name, char** save_ptr)
           argv_size *= 2;
           argv = realloc(argv, argv_size*sizeof(char *));
       }
+	memcpy(*esp,token,strlen(token)+1);
+}
+	argv[argc] = 0;
+	i = (size_t)*esp % WORD_SIZE;
+	if(i)
+	{
+		*esp -= i;
+		memcpy(*esp, &argv[argc],i);
+	}
+	for(i = argc; i>0;i--)
+	{
 
+		*esp -=sizeof(char *);
+		memcpy(*esp, &argv[i], sizeof(char *));
+	}
+//now we have to push the argv
+	token = *esp;
+	*esp -= sizeof(char **);
+	memcpy(*esp, &token, sizeof(char **));
+	//push argc
+	*esp -=sizeof(int);
+	memcpy(*esp, &argc, sizeof(int));
+	//push fake return address
+	*esp -= sizeof(void *);
+	memcpy(*esp, &argv[argc], sizeof(void *));
+	//free argv
+	free(argv);
+	
 
   return success;
+
 }
 
 /* Adds a mapping from user virtual address UPAGE to kernel

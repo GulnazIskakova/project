@@ -35,7 +35,7 @@ struct process_file {
 int UK_pointer (const void *vaddr); // user to kernel
 int newfile (struct file *file);
 void byefile (int fd);
-
+struct file* getfile(int fd);
 static void syscall_handler (struct intr_frame *);
 void get_arg (struct intr_frame *f, int *arg, int n);
 void check_valid_ptr (const void *vaddr);
@@ -82,7 +82,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 
         case SYS_WAIT:
         {
-            get_arg(f. &arg[0], 1);
+            get_arg(f, &arg[0], 1);
             f->eax = wait(arg[0]);
             break;
         }
@@ -132,7 +132,7 @@ syscall_handler (struct intr_frame *f UNUSED)
             get_arg(f, &arg[0], 3);
             check_valid_buffer((void *) arg[1], (unsigned) arg[2]); 
             arg[1] = UK_pointer((const void *) arg[1]);
-            f->eax = write(arg[0], (const void *), arg[1], (unsigned) arg[2]);
+            f->eax = write(arg[0], (const void *) arg[1], (unsigned) arg[2]);
             break;
         }
 
@@ -172,7 +172,7 @@ void exit (int status)
             cur->cp->status = status;
 
 
-    printf ("%s: exit(%d)\n", cur()->name, status);
+    printf ("%s: exit(%d)\n", cur->name, status);
     thread_exit();
 }
 
@@ -252,10 +252,11 @@ int filesize(int fd)
 
 int read (int fd, void *buffer, unsigned size)
 {
+	unsigned i;
     if (fd == STDIN_FILENO)
     {
         uint8_t* local_buffer = (uint8_t *) buffer;
-        for (unsigned i = 0; i < size; ++i)
+        for (i = 0; i < size; ++i)
            local_buffer[i] = input_getc();
         
         return size;
@@ -333,7 +334,7 @@ unsigned tell (int fd)
     }
 
    
-    off_t offet = file_tell(f);
+    off_t offset = file_tell(f);
 
     lock_release(&filesys_lock);
 
@@ -347,7 +348,7 @@ void close (int fd)
     lock_release(&filesys_lock);
 }
 
-int check_valid_ptr (const void *vaddr)
+void check_valid_ptr (const void *vaddr)
 {
     if (!is_user_vaddr(vaddr) || vaddr < USER_VADDR_BOTTOM)
         exit(ERROR);
@@ -379,7 +380,7 @@ struct file* getfile (int fd)
     struct thread *t = thread_current();
     struct list_elem *e;
 
-    for (e = list_begin (&t->files); e != list_end (&t->file_list); e = list_next(e))
+    for (e = list_begin (&t->files); e != list_end (&t->files); e = list_next(e))
     {
         struct process_file *pf = list_entry (e, struct process_file, elem);
         if (fd == pf->fd)
@@ -392,7 +393,7 @@ struct file* getfile (int fd)
 void byefile (int fd)
 {
     struct thread *t = thread_current();
-    struct list_elem *next, *e = list_begin(&t->file_list);
+    struct list_elem *next, *e = list_begin(&t->files);
 
     while (e != list_end (&t->files))
     {
@@ -465,8 +466,9 @@ void byechildren (void)
 
 void get_arg (struct intr_frame *f, int *arg, int n)
 {
+	int i;
     int *ptr;
-    for (int i = 0, i < n; ++i)
+    for (i = 0;i < n; ++i)
     {
         ptr = (int *) f->esp + i + 1;
         check_valid_ptr((const void *) ptr);
@@ -478,8 +480,9 @@ void get_arg (struct intr_frame *f, int *arg, int n)
 
 void check_valid_buffer (void* buffer, unsigned size)
 {
+	unsigned i;
     char* local_buffer = (char *) buffer;
-    for (unsigned i = 0; i < size; ++i)
+    for (i = 0; i < size; ++i)
     {
         check_valid_ptr((const void*) local_buffer);
         local_buffer++;
