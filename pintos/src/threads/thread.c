@@ -218,9 +218,10 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
-  old_level = intr_disable();
-  check_priority();
-  intr_set_level (old_level);
+  //compared after comparing to "that file"
+	//old_level = intr_disable();
+  //check_priority();
+  //intr_set_level (old_level);
 
   return tid;
 }
@@ -258,9 +259,10 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_insert_ordered (&ready_list, &t->elem,
-			(list_less_func *) &compare_priority, NULL);
-  t->status = THREAD_READY;
+  //list_insert_ordered (&ready_list, &t->elem,
+//			(list_less_func *) &compare_priority, NULL);
+	list_push_back(&ready_list, &t->elem);
+	t->status = THREAD_READY;
   intr_set_level (old_level);
 }
 
@@ -331,8 +333,9 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    list_insert_ordered (&ready_list, &cur->elem, (list_less_func *) &compare_priority, NULL);
-  cur->status = THREAD_READY;
+	list_push_back(&ready_list, &cur->elem);
+    //list_insert_ordered (&ready_list, &cur->elem, (list_less_func *) &compare_priority, NULL);
+	cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
 }
@@ -358,7 +361,7 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_prio) 
 {
-	//declaring the neccessary elements for disabling the timer
+	/*//declaring the neccessary elements for disabling the timer
 	//and getting new priority of the thread
 	enum intr_level old_level;
 	int prev_prio;
@@ -371,39 +374,47 @@ thread_set_priority (int new_prio)
     	(prev_prio < thread_current()->priority) ? donate_priority() : check_priority();
    	 // enabling interrupts
     	intr_set_level (old_level);
+*/
+	thread_current()->priority = new_prio;
 }
 
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
 {
-	//we should disable the interrupts
+/*	//we should disable the interrupts
     	enum intr_level old_level;
     	int temp_prio; //holds the current thread's priority
     	old_level = intr_disable();
     	temp_prio = thread_current()->priority;
    	intr_set_level (old_level); // enable back the interrupts
-    	return temp_prio; //return the priority
+    	return temp_prio; //return the priority*/
+	return thread_current()->priority;
 }
 
 /* Sets the current thread's nice value to NICE. */
 void
 thread_set_nice (int nice UNUSED) 
 {
-    enum intr_level old_level = intr_disable();
+    /*enum intr_level old_level = intr_disable();
     thread_current()->nice = nice;
     check_priority();
     intr_set_level(old_level);
+
+*/
 }
+
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
-    enum intr_level old_level = intr_disable();
+  /*  enum intr_level old_level = intr_disable();
     int temp = thread_current()->nice;
     intr_set_level(old_level);
   return temp;
+*/
+	return 0;
 }
 
 /* Returns 100 times the system load average. */
@@ -649,7 +660,7 @@ bool thread_alive (int pid)
     }
     return false;
 }
-
+/*
 bool compare_priority (const struct list_elem *first,
 		       const struct list_elem *second,
 		       void *aux UNUSED)
@@ -766,6 +777,6 @@ void lock_delete(struct lock *lock)
 
 
 
-
+*/
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */

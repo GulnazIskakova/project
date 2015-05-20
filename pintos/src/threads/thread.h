@@ -92,17 +92,17 @@ struct thread
     struct list_elem allelem;           /* List element for all threads list. */
 
     // added for alarm part
-    int64_t awake_time; // when to wake up
-    struct semaphore sema_s; // enables thread to be put to sleep and to be woken
-    struct list_elem s_elem; // specifies element of s_thread_list
+  //  int64_t awake_time; // when to wake up
+   // struct semaphore sema_s; // enables thread to be put to sleep and to be woken
+    //struct list_elem s_elem; // specifies element of s_thread_list
     
     // added for priority part
-    int init_prio; // initial priority of thread (non-donated)
-    struct lock *lock_w; // the lock the thread is currently waiting for
-    struct list donation_list; // a list of threads waiting on the lock current thread is holding
-    struct list_elem donation_elem; // can be added to another thread's d_list
+    //int init_prio; // initial priority of thread (non-donated)
+    //struct lock *lock_w; // the lock the thread is currently waiting for
+    //struct list donation_list; // a list of threads waiting on the lock current thread is holding
+    //struct list_elem donation_elem; // can be added to another thread's d_list
     
-    int nice; 
+  //  int nice; 
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -169,18 +169,18 @@ int thread_get_load_avg (void);
 bool thread_alive (int pid);
 
 // added functions
-bool compare_wakeup_time (const struct list_elem *first,
-			  const struct list_elem *second,
-			  void *aux UNUSED);
+//bool compare_wakeup_time (const struct list_elem *first,
+//			  const struct list_elem *second,
+//			  void *aux UNUSED);
 
-bool compare_priority (const struct list_elem *first,
-		       const struct list_elem *second,
-		       void *aux UNUSED);
+//bool compare_priority (const struct list_elem *first,
+//		       const struct list_elem *second,
+//		       void *aux UNUSED);
 		       
-void lock_delete (struct lock *lock);
-void new_priority (void);
-void check_priority (void);
-void donate_priority (void);
+//void lock_delete (struct lock *lock);
+//void new_priority (void);
+//void check_priority (void);
+//void donate_priority (void);
 
 
 #endif /* threads/thread.h */
