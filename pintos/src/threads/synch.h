@@ -25,7 +25,7 @@ struct lock
   };
 
 void lock_init (struct lock *);
-void release_helper(struct lock *lock);
+//void release_helper(struct lock *lock);
 void lock_acquire (struct lock *);
 bool lock_try_acquire (struct lock *);
 void lock_release (struct lock *);

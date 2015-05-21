@@ -103,7 +103,6 @@ struct thread
     //struct list_elem donation_elem; // can be added to another thread's d_list
     
   //  int nice; 
-
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
     	
@@ -118,7 +117,6 @@ struct thread
     // added for syscall part
     struct list files;
     int fd;
-
     // needed for wait/exec syscalls
     struct list child_list;
     tid_t parent;
@@ -127,7 +125,15 @@ struct thread
     struct child_process *cp;
 
   };
-
+/*struct wait_status
+{
+	struct list_elem elem;
+	struct lock lock;
+	int ref_cnt;
+	tid_t tid;
+	int exit_code;
+	struct semaphore dead;
+}*/
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */

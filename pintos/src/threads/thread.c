@@ -215,7 +215,13 @@ thread_create (const char *name, int priority,
   t->parent = thread_tid();
   struct child_process *cp = newchild(t->tid);
   t->cp = cp;
-
+/*struct child_process* cp = malloc(sizeof(struct child_process));
+cp->pid = t->tid;
+cp->load=NOT_LOADED;
+cp->wait= false;
+cp->exit = false;
+lock_init(&cp->wait_lock);
+list_push_back(&thread_current()->child_list, &cp->elem);*/
   /* Add to run queue. */
   thread_unblock (t);
   //compared after comparing to "that file"
